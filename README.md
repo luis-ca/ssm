@@ -1,13 +1,13 @@
 # SSM - Simple State Machine mixin
 
-# SSM is a mixin that adds finite-state machine behavior to a class.
+SSM is a mixin that adds finite-state machine behavior to a class.
 
 ### Installation
 
     gem sources -a http://gems.github.com
     sudo gem install spoonsix-ssm
 
-### Example usage
+### Simple example usage
 
     class Door
       include SSM
@@ -29,6 +29,12 @@
     door.open
     door.is?(:opened) #=> true
     door.close
+    
+### Inspiration and resources
+
+* http://en.wikipedia.org/wiki/Finite-state_machine
+* http://github.com/rubyist/aasm
+* http://www.ibm.com/developerworks/java/library/j-cb03137/index.html
 
 ## License
 
