@@ -32,9 +32,9 @@ SSM is a mixin that adds finite-state machine behavior to a class.
     
 ### Inspiration and resources
 
-* http://en.wikipedia.org/wiki/Finite-state_machine
-* http://github.com/rubyist/aasm
-* http://www.ibm.com/developerworks/java/library/j-cb03137/index.html
+* [http://en.wikipedia.org/wiki/Finite-state_machine](http://en.wikipedia.org/wiki/Finite-state_machine)
+* [http://github.com/rubyist/aasm](http://github.com/rubyist/aasm)
+* [http://www.ibm.com/developerworks/java/library/j-cb03137/index.html](http://www.ibm.com/developerworks/java/library/j-cb03137/index.html)
 
 ## License
 
