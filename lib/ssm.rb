@@ -91,9 +91,7 @@ module SSM
         instance.instance_eval("def #{sm.property_name}; @#{sm.property_name}; end") unless instance.respond_to?(sm.property_name)
         instance.instance_eval("def #{sm.property_name}=(v); @#{sm.property_name} = v; end") unless instance.respond_to?("#{sm.property_name}=".to_sym)
          
-        # Set up default state
-        initial_state_value = sm.use_property_index == true ? sm.get_state_index_by_name(sm.initial_state.name) : sm.initial_state.name
-        instance.instance_variable_set("@#{sm.property_name}".to_sym, initial_state_value)
+        instance.send(:_synchronize_state)
       end
     end
         
@@ -215,7 +213,7 @@ module SSM
       
       # Create StateMachine and create method associated with this StateTransition
       SSM::TemplateStateMachines[self] << SSM::Event.new(name, SSM::StateTransition.new(from, to), &block)
-      define_method("#{name.to_s}") { |*args| _update_ssm_state unless _state_up_to_date?; _ssm_trigger_event(name, args) }
+      define_method("#{name.to_s}") { |*args| _synchronize_state; _ssm_trigger_event(name, args) }
     end
     
     def template_state_machine #:nodoc:
@@ -261,7 +259,7 @@ module SSM
   #   door.open
   #   door.is?(:opened) #=> true
   def is?(state_name_or_symbol)
-    _update_ssm_state unless _state_up_to_date?
+    _synchronize_state
     @ssm_state_machine.current_state.name.to_sym == state_name_or_symbol.to_sym
   end
 
@@ -287,13 +285,14 @@ module SSM
   #   door.open
   #   door.is?(:closed) #=> false  
   def is_not?(state_name_or_symbol)
-    _update_ssm_state unless _state_up_to_date?
+    _synchronize_state
     @ssm_state_machine.current_state.name.to_sym != state_name_or_symbol.to_sym
   end
   
   private
 
   def _ssm_trigger_event(event_name_or_symbol, args)
+    _synchronize_state
     event = @ssm_state_machine.get_event_by_name(event_name_or_symbol)
     
     @ssm_state_machine.transition(event.transition)
@@ -329,6 +328,20 @@ module SSM
     end
   end
   
+  
+  def _synchronize_state
+    
+    if instance_variable_get("@#{@ssm_state_machine.property_name}".to_sym).nil?
+      state_value = @ssm_state_machine.use_property_index == true ?
+        @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name) :
+        @ssm_state_machine.current_state.name
+      send("#{@ssm_state_machine.property_name}=".to_sym, state_value)
+    else
+      _update_ssm_state unless _state_up_to_date?
+    end
+    true
+  end
+  
   # Checks whether the StateMachine and the property in the instance are in sync
   def _state_up_to_date?
     unless @ssm_state_machine.property_name.nil?
@@ -346,7 +359,7 @@ module SSM
   # Updates the StateMachine based on the value of the state property of the instance
   def _update_ssm_state
     unless @ssm_state_machine.property_name.nil?
-      state_value = self.send("#{@ssm_state_machine.property_name}".to_sym)
+      state_value = send("#{@ssm_state_machine.property_name}".to_sym)
       @ssm_state_machine.current_state = @ssm_state_machine.use_property_index == true ? @ssm_state_machine.get_state_by_index(state_value) : @ssm_state_machine.get_state_by_name(state_value)
     end
   end

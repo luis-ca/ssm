@@ -154,6 +154,7 @@ describe SSM do
     after :each do
       Object.send(:remove_const, :Foo)
       Object.send(:remove_const, :Bar)
+      Object.send(:remove_const, :Baz)
     end
   
     context " - State: " do
@@ -273,10 +274,29 @@ describe SSM do
         end
 
       end
+      
+      class Baz
+        include SSM
+
+        ssm_property :my_state, :use_index
+      
+        ssm_initial_state :first_state
+        ssm_state :second_state
+        ssm_state :third_state
+      
+        ssm_event :my_event, :to => :second_state do
+          puts "a code block"
+        end
+
+        ssm_event :my_other_event, :to => :second_state do
+          puts "another code block"
+        end
+      end
     end
   
     after :each do
       Object.send(:remove_const, :Foo)
+      Object.send(:remove_const, :Baz)
     end
   
     it "should clone the StateMachine template when initialized" do
@@ -321,7 +341,7 @@ describe SSM do
       model.ssm_state_machine.current_state.name.should eql(:first_state)
     end
 
-    it "should update state property if it exists" do
+    it "should attempt to update State property if it exists" do
       model = Foo.new
       model.some_state_property.should equal(:first_state)
       model.first_to_second
@@ -352,10 +372,26 @@ describe SSM do
       model = Baz.new
       model.is?(:second_state).should be_false
       model.my_state = 1
-      # model.is?(:second_state).should be_true
       model.is_not?(:first_state).should be_true
     end
     
+    it "should synchronize State when state is updated on model" do
+      model = Baz.new
+      model.my_state = 1
+      model.send(:_synchronize_state).should be_true
+      model.ssm_state_machine.current_state.name.should eql(:second_state)
+    end
+    
+    it "should synchronize State when state is nil on model" do
+      model = Baz.new
+      model.my_state = nil
+      model.my_state.should be_nil
+      model.ssm_state_machine.current_state.name.should eql(:first_state)
+      
+      model.send(:_synchronize_state).should be_true
+      model.my_state.should eql(0)
+      model.ssm_state_machine.current_state.name.should eql(:first_state)
+    end
   end
 
   context "when allocated" do
@@ -395,4 +431,4 @@ describe SSM do
       Foo.allocate.ssm_state_machine.should be_a(SSM::StateMachine)
     end
   end
-end
+end 

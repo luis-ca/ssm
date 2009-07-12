@@ -25,6 +25,7 @@ end
 
 When /^I trigger the open event on an instance of Door$/ do
   @door = Door.new
+  raise @door.inspect
   @door.open_it
 end
 
