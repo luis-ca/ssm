@@ -12,7 +12,7 @@ SSM is a mixin that adds finite-state machine behavior to a class.
     class Door
       include SSM
 
-      ssm_initial_state :closed
+      ssm_initial_state :closed # required
       ssm_state :opened
 
       ssm_event :open, :from => [:closed], :to => :opened do
@@ -29,7 +29,33 @@ SSM is a mixin that adds finite-state machine behavior to a class.
     door.open
     door.is?(:opened) #=> true
     door.close
-    
+    door.is_not?(:opened) #=> true
+    door.is?(:closed) #=> true
+
+### Example usage with persistence
+
+SSM does not worry about persistence. It does allow the user to specify an instance property to store the State
+in, either as a symbol or as an index. This can then be persisted. SSM will recover state based on this property.
+
+  class Door < ActiveRecord:Base
+    include SSM
+
+    ssm_property :state, :use_index
+
+    ssm_initial_state :closed
+    ssm_state :opened
+    ...
+  end
+
+  door = Door.new
+  door.open
+  door.is?(:opened) #=> true
+  door.state #=> 1
+  door.save
+  
+  persisted_door = Door.find(door.id)
+  persisted_door.is?(:opened) #=> true
+      
 ### Inspiration and resources
 
 * [http://en.wikipedia.org/wiki/Finite-state_machine](http://en.wikipedia.org/wiki/Finite-state_machine)
@@ -38,8 +64,8 @@ SSM is a mixin that adds finite-state machine behavior to a class.
 
 ## License
 
-dog not god: server health monitoring simplified
-Copyright (C) 2009 spoonsix - Luis Correa d'Almeida
+SSM - Simple State Machine mixin
+Copyright (C) 2009 spoonsix - Luis Corrêa d'Almeida
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

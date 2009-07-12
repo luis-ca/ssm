@@ -2,11 +2,30 @@ require File.join(File.dirname(__FILE__), '..', 'spec_helper')
 
 describe SSM do
   
+  context "when inherited" do
+    it "should raise an Exception" do
+      lambda {
+        class InheritedClass < SSM::ClassMethod
+        end
+      }.should raise_error(Exception)
+    end
+  end
+  
   context "when included" do
     
     before :each do
-      class SimpleTestClass; include SSM; end
-      class AnotherSimpleTestClass; include SSM; end
+      class SimpleTestClass; include SSM; ssm_initial_state :initial_state; end
+      class AnotherSimpleTestClass; include SSM; ssm_initial_state :initial_state; end
+      
+      class AMoreCompleteClass
+        include SSM
+        
+        ssm_initial_state :one
+        ssm_state :two
+        
+        ssm_event :to_two, :from => [], :to => :two do
+        end
+      end
     end
   
     after :each do
@@ -47,6 +66,23 @@ describe SSM do
     it "should not share StateMachines templates accross different classes" do
       SimpleTestClass.new.ssm_state_machine.object_id.should_not equal(AnotherSimpleTestClass.new.ssm_state_machine.object_id)
     end
+
+    it "should allow for retrieval of all States using ssm_states" do
+      states = AMoreCompleteClass.ssm_states
+      
+      states[0].should be_a(SSM::State)
+      states[0].name.should eql(:one)
+      
+      states[1].should be_a(SSM::State)
+      states[1].name.should eql(:two)
+    end
+    
+    it "should allow for retrieval of all Events using ssm_events" do
+      events = AMoreCompleteClass.ssm_events
+      
+      events[0].should be_a(SSM::Event)
+      events[0].name.should eql(:to_two)
+    end
   end
 
   context "when initialized" do
@@ -57,7 +93,7 @@ describe SSM do
 
         ssm_property :my_state
       
-        ssm_state :first_state
+        ssm_initial_state :first_state
         ssm_state :second_state
         ssm_state :third_state
       
@@ -68,7 +104,6 @@ describe SSM do
         ssm_event :my_other_event, :to => :second_state do
           puts "another code block"
         end
-
       end
       
       class Bar
@@ -76,7 +111,7 @@ describe SSM do
 
         ssm_property :my_state, :use_index
       
-        ssm_state :first_state
+        ssm_initial_state :first_state
         ssm_state :second_state
         ssm_state :third_state
       
@@ -93,6 +128,27 @@ describe SSM do
         end        
       end
       
+      class Baz
+        include SSM
+
+        ssm_property :my_state, :use_index
+      
+        ssm_initial_state :first_state
+        ssm_state :second_state
+        ssm_state :third_state
+      
+        ssm_event :my_event, :to => :second_state do
+          puts "a code block"
+        end
+
+        ssm_event :my_other_event, :to => :second_state do
+          puts "another code block"
+        end
+        
+        def initialize(*args)
+          @my_state = 1
+        end
+      end
     end
   
     after :each do
@@ -100,9 +156,22 @@ describe SSM do
       Object.send(:remove_const, :Bar)
     end
   
-    context "states" do
+    context " - State: " do
+      
       it "should be set up" do
         Foo.new.ssm_state_machine.states.size.should eql(3)
+      end
+      
+      it "should require an initial state" do
+        lambda {
+          class ClassWithoutInitialState
+            include SSM
+            ssm_state :first_state
+          end
+          
+          ClassWithoutInitialState.new
+        }.should raise_error(SSM::InitialStateRequired)
+        Object.send(:remove_const, :ClassWithoutInitialState)
       end
   
       it "should throw an exception if we try to set up a model with two or more States that are the same" do
@@ -159,7 +228,7 @@ describe SSM do
         lambda {
           class ClassWithDuplicateEvents
             include SSM
-            ssm_state :second_state
+            ssm_initial_state :second_state
             ssm_event :same_event, :to => :second_state do; end;
             ssm_event :same_event, :to => :second_state do; end;
           end
@@ -183,7 +252,7 @@ describe SSM do
 
         ssm_property :some_state_property
         
-        ssm_state :first_state
+        ssm_initial_state :first_state
         ssm_state :second_state
         ssm_state :third_state
 
@@ -213,7 +282,7 @@ describe SSM do
     it "should clone the StateMachine template when initialized" do
       Foo.new.ssm_state_machine.should be_a(SSM::StateMachine)
     end
-  
+    
     it "should not allow to set ssm_state_machine" do
       model = Foo.new
       lambda {
@@ -277,6 +346,53 @@ describe SSM do
       model.first_to_second
       model.is_not?(:first_state).should be_true
       model.is_not?(:second_state).should be_false
+    end
+
+    it "should update State if ssm_property is set and has a valid value" do
+      model = Baz.new
+      model.is?(:second_state).should be_false
+      model.my_state = 1
+      # model.is?(:second_state).should be_true
+      model.is_not?(:first_state).should be_true
+    end
+    
+  end
+
+  context "when allocated" do
+    before :each do
+      class Foo
+        include SSM
+
+        ssm_property :some_state_property
+        
+        ssm_initial_state :first_state
+        ssm_state :second_state
+        ssm_state :third_state
+
+        def initialize(*args)
+          @var = "initialization string"
+        end
+
+        ssm_event :first_to_second, :from => [:first_state], :to => :second_state do
+          # code here
+        end
+
+        ssm_event :to_first, :from => [:second_state, :third_state], :to => :first_state do
+          # code here
+        end
+      
+        ssm_event :give_me_my_context, :to => :second_state do
+          self
+        end
+
+      end
+    end
+  
+    after :each do
+      Object.send(:remove_const, :Foo)
+    end
+    it "should clone the StateMachine template when initialized" do
+      Foo.allocate.ssm_state_machine.should be_a(SSM::StateMachine)
     end
   end
 end

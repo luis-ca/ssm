@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
    s.name = %q{ssm}
-   s.version = "0.1.2"
+   s.version = "0.1.4"
    s.date = Time.now.strftime("%Y-%m-%d")
    s.authors = ["Luis Correa d'Almeida"]
    s.email = %q{luis.ca@gmail.com}

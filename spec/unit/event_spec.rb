@@ -34,5 +34,5 @@ describe SSM::Event do
       event_1.equal(event_2).should eql(true)
     end
   end
-  
+
 end

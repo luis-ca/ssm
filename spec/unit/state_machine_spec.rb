@@ -2,6 +2,15 @@ require File.join(File.dirname(__FILE__), '..', 'spec_helper')
 
 describe SSM::StateMachine do
   
+  it "should fail validation if no initial State is set" do
+    lambda {
+      @sm.validate
+    }.should raise_error(SSM::InitialStateRequired)
+    
+    @sm.initial_state = SSM::State.new(:first_state)
+    @sm.validate.should be_true
+  end
+  
   before :each do
     @sm = SSM::StateMachine.new
   end
@@ -29,6 +38,13 @@ describe SSM::StateMachine do
       @sm << state = SSM::State.new(:first_state)
       @sm << SSM::State.new(:second_state)
       @sm.get_state_by_name(:first_state).should equal(state)
+    end
+    
+    it "should allow retrieval of State by index" do
+      @sm << state_1 = SSM::State.new(:first_state)
+      @sm << state_2 = SSM::State.new(:second_state)
+      @sm.get_state_by_index(0).should equal(state_1)
+      @sm.get_state_by_index(1).should equal(state_2)
     end
     
     it "should raise an SSM::UndefinedState exception when trying to retrieve an unexisting State by name" do
@@ -78,6 +94,17 @@ describe SSM::StateMachine do
     end
     
     it "should overide an existing initial state" do
+      state_1 = SSM::State.new(:first_state)
+      state_2 = SSM::State.new(:second_state)
+      @sm.initial_state = state_1
+      @sm.initial_state = state_2
+      @sm.initial_state.should eql(state_2)
+      
+      # Assigning initial_state will add the State to the StateMachine
+      @sm.states.size.should eql(2)
+    end
+    
+    it "should return the existing initial state" do
       state_1 = SSM::State.new(:first_state)
       state_2 = SSM::State.new(:second_state)
       @sm.initial_state = state_1

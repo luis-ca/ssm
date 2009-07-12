@@ -4,7 +4,7 @@ class Door
   
   include SSM
   
-  ssm_initial_state :closed
+  ssm_initial_state :closed # required
   ssm_state :opened
   
   ssm_event :open, :from => [:closed], :to => :opened do

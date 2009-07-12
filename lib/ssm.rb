@@ -42,11 +42,12 @@ module SSM
   
   VERSION = '0.1.2';
 
-  class InvalidTransition < RuntimeError; end
-  class UndefinedState    < RuntimeError; end
-  class DuplicateState    < RuntimeError; end
-  class UndefinedEvent    < RuntimeError; end
-  class DuplicateEvent    < RuntimeError; end
+  class InvalidTransition     < RuntimeError; end
+  class UndefinedState        < RuntimeError; end
+  class DuplicateState        < RuntimeError; end
+  class UndefinedEvent        < RuntimeError; end
+  class DuplicateEvent        < RuntimeError; end
+  class InitialStateRequired  < RuntimeError; end
   
   # TemplateStateMachines stores the StateMachine templates for each class
   # that includes SSM. Because all setup is done before instantiation, each
@@ -65,27 +66,39 @@ module SSM
     klass.extend SSM::ClassMethods
     SSM::TemplateStateMachines[klass] = SSM::StateMachine.new
     
+    def klass.allocate(*args)
+      instance = super(*args)
+      setup(instance)
+      instance
+    end
+    
     # Intercept contructor. We can't overide initialize given that the user 
     # may define their own initialize method.
     def klass.new(*args)
       instance = super(*args)
+      setup(instance)
+      instance
+    end
+
+    def klass.setup(instance)
+      SSM::TemplateStateMachines[self].validate
+      
       sm = SSM::TemplateStateMachines[self].clone_and_freeze
       instance.instance_variable_set(:@ssm_state_machine, sm)
-      
+
       unless sm.property_name.nil?
         # This allows others to set up the object however they see fit, including mixing in setters.
         instance.instance_eval("def #{sm.property_name}; @#{sm.property_name}; end") unless instance.respond_to?(sm.property_name)
         instance.instance_eval("def #{sm.property_name}=(v); @#{sm.property_name} = v; end") unless instance.respond_to?("#{sm.property_name}=".to_sym)
-        
-        # can we refactor this?
+         
+        # Set up default state
         initial_state_value = sm.use_property_index == true ? sm.get_state_index_by_name(sm.initial_state.name) : sm.initial_state.name
-        instance.send("#{sm.property_name}=".to_sym, initial_state_value)
+        instance.instance_variable_set("@#{sm.property_name}".to_sym, initial_state_value)
       end
-      
-      instance
     end
-
+        
   end
+  
   
   # Class methods to be mixed in when the module is included.
   #
@@ -95,7 +108,6 @@ module SSM
   module ClassMethods
 
     attr_accessor :ssm_instance_property
-    
     
     def inherited(subclass) #:nodoc:
       raise Exception.new("SSM cannot be inherited. Use include instead.")
@@ -182,7 +194,7 @@ module SSM
     #   door = Door.new
     #   door.open
     #   door.is?(:opened) #=> true
-    #   door.close
+    #   door.closed
     #
     def ssm_event(name, options = {}, &block)
       
@@ -203,11 +215,21 @@ module SSM
       
       # Create StateMachine and create method associated with this StateTransition
       SSM::TemplateStateMachines[self] << SSM::Event.new(name, SSM::StateTransition.new(from, to), &block)
-      define_method("#{name.to_s}") { |*args| _ssm_trigger_event(name, args) }
+      define_method("#{name.to_s}") { |*args| _update_ssm_state unless _state_up_to_date?; _ssm_trigger_event(name, args) }
     end
     
     def template_state_machine #:nodoc:
       SSM::TemplateStateMachines[self]
+    end
+    
+    # Returns all the available Events
+    def ssm_events
+      template_state_machine.events
+    end
+    
+    # Returns all the available States
+    def ssm_states
+      template_state_machine.states
     end
     
   end
@@ -239,6 +261,7 @@ module SSM
   #   door.open
   #   door.is?(:opened) #=> true
   def is?(state_name_or_symbol)
+    _update_ssm_state unless _state_up_to_date?
     @ssm_state_machine.current_state.name.to_sym == state_name_or_symbol.to_sym
   end
 
@@ -264,6 +287,7 @@ module SSM
   #   door.open
   #   door.is?(:closed) #=> false  
   def is_not?(state_name_or_symbol)
+    _update_ssm_state unless _state_up_to_date?
     @ssm_state_machine.current_state.name.to_sym != state_name_or_symbol.to_sym
   end
   
@@ -273,11 +297,11 @@ module SSM
     event = @ssm_state_machine.get_event_by_name(event_name_or_symbol)
     
     @ssm_state_machine.transition(event.transition)
-    _update_instance_status_property unless @ssm_state_machine.property_name.nil?
+    _update_instance_state_property unless @ssm_state_machine.property_name.nil?
     instance_exec *args, &event.block
   end
   
-  def _update_instance_status_property
+  def _update_instance_state_property
     unless @ssm_state_machine.current_state.nil?
       if @ssm_state_machine.use_property_index == true
         value = @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name)
@@ -305,4 +329,25 @@ module SSM
     end
   end
   
+  # Checks whether the StateMachine and the property in the instance are in sync
+  def _state_up_to_date?
+    unless @ssm_state_machine.property_name.nil?
+      state_value = self.send("#{@ssm_state_machine.property_name}".to_sym)
+      if @ssm_state_machine.use_property_index == true
+        state_value == @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name)
+      else
+        state_value == @ssm_state_machine.current_state.name
+      end
+    else
+      true
+    end
+  end
+  
+  # Updates the StateMachine based on the value of the state property of the instance
+  def _update_ssm_state
+    unless @ssm_state_machine.property_name.nil?
+      state_value = self.send("#{@ssm_state_machine.property_name}".to_sym)
+      @ssm_state_machine.current_state = @ssm_state_machine.use_property_index == true ? @ssm_state_machine.get_state_by_index(state_value) : @ssm_state_machine.get_state_by_name(state_value)
+    end
+  end
 end

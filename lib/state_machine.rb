@@ -18,6 +18,11 @@ module SSM
       @events = []
     end
     
+    def validate
+      raise SSM::InitialStateRequired if @initial_state.nil?
+      true
+    end
+    
     # Cloning is sufficent given that instances of SSM::State and SSM::Event are immutable. 
     # Furthermore, we freeze the Arrays storing those instances
     def clone_and_freeze
@@ -28,7 +33,6 @@ module SSM
     end
     
     def init
-      @initial_state = @states[0] unless @initial_state
       @current_state = @initial_state
     end
     
@@ -70,6 +74,10 @@ module SSM
     
     def get_state_index_by_name(name)
       @states.index(get_state_by_name(name))
+    end
+    
+    def get_state_by_index(index)
+      @states[index.to_i]
     end
     
     def get_event_by_name(name)
