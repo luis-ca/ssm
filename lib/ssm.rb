@@ -40,7 +40,7 @@ require File.join(File.dirname(__FILE__), 'state_machine')
 #--
 module SSM
   
-  VERSION = '0.1.2';
+  VERSION = '0.1.5';
 
   class InvalidTransition     < RuntimeError; end
   class UndefinedState        < RuntimeError; end
