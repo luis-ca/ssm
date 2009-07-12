@@ -37,24 +37,24 @@ SSM is a mixin that adds finite-state machine behavior to a class.
 SSM does not worry about persistence. It does allow the user to specify an instance property to store the State
 in, either as a symbol or as an index. This can then be persisted. SSM will recover state based on this property.
 
-  class Door < ActiveRecord:Base
-    include SSM
+    class Door < ActiveRecord:Base
+      include SSM
 
-    ssm_property :state, :use_index
+      ssm_property :state, :use_index
 
-    ssm_initial_state :closed
-    ssm_state :opened
-    ...
-  end
+      ssm_initial_state :closed
+      ssm_state :opened
+      ...
+    end
 
-  door = Door.new
-  door.open
-  door.is?(:opened) #=> true
-  door.state #=> 1
-  door.save
+    door = Door.new
+    door.open
+    door.is?(:opened) #=> true
+    door.state #=> 1
+    door.save
   
-  persisted_door = Door.find(door.id)
-  persisted_door.is?(:opened) #=> true
+    persisted_door = Door.find(door.id)
+    persisted_door.is?(:opened) #=> true
       
 ### Inspiration and resources
 
