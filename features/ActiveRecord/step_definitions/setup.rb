@@ -19,7 +19,7 @@ end
 
 Given /^I have added an index based property I will use to manage persistence with ActiveRecord$/ do
   class Door < ActiveRecord::Base
-    ssm_property :state, :use_index
+    ssm_inject_state_into :state, :map_to_index => true, :strategy => :active_record
   end
 end
 

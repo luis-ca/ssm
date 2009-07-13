@@ -40,9 +40,9 @@ in, either as a symbol or as an index. This can then be persisted. SSM will reco
     class Door < ActiveRecord:Base
       include SSM
 
-      ssm_property :state, :use_index
+      ssm_inject_state_into :state, :map_to_index => true, :strategy => :active_record
 
-      ssm_initial_state :closed
+      ssm_initial_state :closed # required
       ssm_state :opened
       ...
     end
