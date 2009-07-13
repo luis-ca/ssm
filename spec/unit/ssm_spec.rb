@@ -91,62 +91,33 @@ describe SSM do
       class Foo
         include SSM
 
-        ssm_property :my_state
+        ssm_inject_state_into :foo_property, :map_to_index => true
       
-        ssm_initial_state :first_state
-        ssm_state :second_state
-        ssm_state :third_state
+        ssm_initial_state :foo_state_1
+        ssm_state :foo_state_2
+        ssm_state :foo_state_3
       
-        ssm_event :my_event, :to => :second_state do
-          puts "a code block"
+        ssm_event :foo_event_1, :from => [:foo_state_1], :to => :foo_state_2 do
         end
-
-        ssm_event :my_other_event, :to => :second_state do
-          puts "another code block"
+        ssm_event :foo_event_2, :from => [:foo_state_3],  :to => :foo_state_3 do
+        end
+        ssm_event :foo_event_3, :from => [],  :to => :foo_state_1 do |*args|
+          args
         end
       end
       
       class Bar
         include SSM
 
-        ssm_property :my_state, :use_index
+        ssm_inject_state_into :bar_property
       
-        ssm_initial_state :first_state
-        ssm_state :second_state
-        ssm_state :third_state
+        ssm_initial_state :bar_state_1
+        ssm_state :bar_state_2
+        ssm_state :bar_state_3
       
-        ssm_event :my_event, :from => [:first_state], :to => :second_state do
-          puts "a code block"
+        ssm_event :bar_event_1, :from => [:bar_state_1], :to => :bar_state_2 do
         end
-
-        ssm_event :my_other_event, :to => :second_state do
-          puts "another code block"
-        end
-        
-        ssm_event :my_other_event_with_args, :to => :second_state do |*args|
-          args
-        end        
-      end
-      
-      class Baz
-        include SSM
-
-        ssm_property :my_state, :use_index
-      
-        ssm_initial_state :first_state
-        ssm_state :second_state
-        ssm_state :third_state
-      
-        ssm_event :my_event, :to => :second_state do
-          puts "a code block"
-        end
-
-        ssm_event :my_other_event, :to => :second_state do
-          puts "another code block"
-        end
-        
-        def initialize(*args)
-          @my_state = 1
+        ssm_event :bar_event_2, :from => [:bar_state_3],  :to => :bar_state_3 do
         end
       end
     end
@@ -154,10 +125,9 @@ describe SSM do
     after :each do
       Object.send(:remove_const, :Foo)
       Object.send(:remove_const, :Bar)
-      Object.send(:remove_const, :Baz)
     end
   
-    context " - State: " do
+    context " - States:" do
       
       it "should be set up" do
         Foo.new.ssm_state_machine.states.size.should eql(3)
@@ -167,7 +137,7 @@ describe SSM do
         lambda {
           class ClassWithoutInitialState
             include SSM
-            ssm_state :first_state
+            ssm_state :foo_state
           end
           
           ClassWithoutInitialState.new
@@ -179,8 +149,8 @@ describe SSM do
         lambda {
           class ClassWithDuplicateStates
             include SSM
-            ssm_state :first_state
-            ssm_state :first_state
+            ssm_state :foo_state
+            ssm_state :foo_state
           end
         }.should raise_error(SSM::DuplicateState)
         Object.send(:remove_const, :ClassWithDuplicateStates)
@@ -189,28 +159,28 @@ describe SSM do
       it "should set an initial State" do
         class ClassForInitialState
           include SSM
-          ssm_initial_state :initial_state
+          ssm_initial_state :foo_state
         end
     
-        ClassForInitialState.ssm_initial_state.equal(SSM::State.new(:initial_state)).should be_true
+        ClassForInitialState.ssm_initial_state.equal(SSM::State.new(:foo_state)).should be_true
         Object.send(:remove_const, :ClassForInitialState)
       end
     
-      it "should customize state property" do
-        Foo.new.my_state.should equal(:first_state)
+      it "should customize State property" do
+        Bar.new.bar_property.should equal(:bar_state_1)
       end
       
-      it "should customize state property using index" do
-        Bar.new.my_state.should equal(0)
+      it "should customize State property using index" do
+        Foo.new.foo_property.should equal(0)
       end
       
     end
 
-    context "events" do
+    context "- Events:" do
       
       it "should set up the Events" do
         model = Foo.new
-        model.ssm_state_machine.events.size.should eql(2)
+        model.ssm_state_machine.events.size.should eql(3)
       end
       
       it "should throw an exception if we try to set up an event with no to state" do
@@ -229,19 +199,23 @@ describe SSM do
         lambda {
           class ClassWithDuplicateEvents
             include SSM
-            ssm_initial_state :second_state
-            ssm_event :same_event, :to => :second_state do; end;
-            ssm_event :same_event, :to => :second_state do; end;
+            ssm_initial_state :foo_state
+            ssm_event :foo_event, :to => :foo_state do; end;
+            ssm_event :foo_event, :to => :foo_state do; end;
           end
         }.should raise_error(SSM::DuplicateEvent)
         Object.send(:remove_const, :ClassWithDuplicateEvents)
       end
       
       it "should accept arguments" do
-        Bar.new.my_other_event_with_args(1,2,3).should eql([1,2,3])
-        Bar.new.my_other_event_with_args(1).should eql([1])
-        Bar.new.my_other_event_with_args({:one => 1, :two => 2}).should ==([{:one => 1, :two => 2}])
+        Foo.new.foo_event_3(1,2,3).should eql([1,2,3])
+        Foo.new.foo_event_3(1).should eql([1])
+        Foo.new.foo_event_3({:one => 1, :two => 2}).should ==([{:one => 1, :two => 2}])
       end
+    end
+
+    context "- Strategies:" do
+      
     end
   end
   
@@ -251,7 +225,7 @@ describe SSM do
       class Foo
         include SSM
 
-        ssm_property :some_state_property
+        ssm_inject_state_into :some_state_property
         
         ssm_initial_state :first_state
         ssm_state :second_state
@@ -278,7 +252,7 @@ describe SSM do
       class Baz
         include SSM
 
-        ssm_property :my_state, :use_index
+        ssm_inject_state_into :my_state, :map_to_index => true
       
         ssm_initial_state :first_state
         ssm_state :second_state
@@ -368,7 +342,7 @@ describe SSM do
       model.is_not?(:second_state).should be_false
     end
 
-    it "should update State if ssm_property is set and has a valid value" do
+    it "should update State if ssm_inject_state_into is set and has a valid value" do
       model = Baz.new
       model.is?(:second_state).should be_false
       model.my_state = 1
@@ -399,7 +373,7 @@ describe SSM do
       class Foo
         include SSM
 
-        ssm_property :some_state_property
+        ssm_inject_state_into :some_state_property
         
         ssm_initial_state :first_state
         ssm_state :second_state

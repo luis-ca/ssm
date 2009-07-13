@@ -1,4 +1,5 @@
 require File.join(File.dirname(__FILE__), 'state_machine')
+require File.join(File.dirname(__FILE__), 'injection_strategies', 'base')
 
 # SSM - Simple State Machine mixin 
 #
@@ -63,6 +64,7 @@ module SSM
   # the hash will see it as a new key, even though if you inspect the hash you will see two keys whose string
   # representation is the same.
   def self.included(klass) #:nodoc:
+    
     klass.extend SSM::ClassMethods
     SSM::TemplateStateMachines[klass] = SSM::StateMachine.new
     
@@ -81,18 +83,22 @@ module SSM
     end
 
     def klass.setup(instance)
+      
       SSM::TemplateStateMachines[self].validate
       
       sm = SSM::TemplateStateMachines[self].clone_and_freeze
       instance.instance_variable_set(:@ssm_state_machine, sm)
-
-      unless sm.property_name.nil?
-        # This allows others to set up the object however they see fit, including mixing in setters.
-        instance.instance_eval("def #{sm.property_name}; @#{sm.property_name}; end") unless instance.respond_to?(sm.property_name)
-        instance.instance_eval("def #{sm.property_name}=(v); @#{sm.property_name} = v; end") unless instance.respond_to?("#{sm.property_name}=".to_sym)
-         
-        instance.send(:_synchronize_state)
+      
+      begin
+        strategy_name = sm.injection_strategy.nil? ? "object" : sm.injection_strategy.to_s
+        module_name = "#{strategy_name.gsub(/\/(.?)/) { "::" + $1.upcase }.gsub(/(^|_)(.)/) { $2.upcase }}Strategy" # from ActiveSupport
+        require File.join(File.dirname(__FILE__), 'injection_strategies', "#{strategy_name}_strategy.rb")
+        instance.extend(SSM::InjectionStrategies.const_get(module_name))
+      rescue
+        raise
       end
+      
+      instance.ssm_setup
     end
         
   end
@@ -136,7 +142,7 @@ module SSM
     #   class Door
     #     include SSM
     #
-    #     ssm_property :state
+    #     ssm_inject_state_into :state
     #     ssm_initial_state :closed
     #   end
     #
@@ -146,17 +152,17 @@ module SSM
     #   class Door
     #     include SSM
     #
-    #     ssm_property :state, :use_index
+    #     ssm_inject_state_into :state, :use_index
     #     ssm_initial_state :closed
     #   end
     #
     #   Door.new.state #=> 0
     #
-    def ssm_property(name, use_index=nil)
+    def ssm_inject_state_into(name, options={}, &block)
       SSM::TemplateStateMachines[self].property_name = name
-      SSM::TemplateStateMachines[self].use_property_index = use_index.nil? ? false : true
+      SSM::TemplateStateMachines[self].use_property_index = options[:map_to_index].nil? ? false : true
+      SSM::TemplateStateMachines[self].injection_strategy = options[:strategy] #SSM::InjectionStrategies::Base.factory(options[:strategy])
     end
-    
     
     # Adds new States. This method takes a string or a symbol.
     #
@@ -296,19 +302,8 @@ module SSM
     event = @ssm_state_machine.get_event_by_name(event_name_or_symbol)
     
     @ssm_state_machine.transition(event.transition)
-    _update_instance_state_property unless @ssm_state_machine.property_name.nil?
+    ssm_set(@ssm_state_machine.get_state_for_property) unless @ssm_state_machine.property_name.nil?
     instance_exec *args, &event.block
-  end
-  
-  def _update_instance_state_property
-    unless @ssm_state_machine.current_state.nil?
-      if @ssm_state_machine.use_property_index == true
-        value = @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name)
-      else
-        value = @ssm_state_machine.current_state.name
-      end
-      self.send("#{@ssm_state_machine.property_name}=".to_sym, value)
-    end
   end
   
   # instance_exec for 1.8.x
@@ -328,39 +323,20 @@ module SSM
     end
   end
   
-  
   def _synchronize_state
-    
-    if instance_variable_get("@#{@ssm_state_machine.property_name}".to_sym).nil?
-      state_value = @ssm_state_machine.use_property_index == true ?
-        @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name) :
-        @ssm_state_machine.current_state.name
-      send("#{@ssm_state_machine.property_name}=".to_sym, state_value)
-    else
-      _update_ssm_state unless _state_up_to_date?
-    end
+    ssm_get.nil? ? ssm_set(@ssm_state_machine.get_state_for_property) : _update_ssm_state unless _state_up_to_date?
     true
   end
   
   # Checks whether the StateMachine and the property in the instance are in sync
   def _state_up_to_date?
-    unless @ssm_state_machine.property_name.nil?
-      state_value = self.send("#{@ssm_state_machine.property_name}".to_sym)
-      if @ssm_state_machine.use_property_index == true
-        state_value == @ssm_state_machine.get_state_index_by_name(@ssm_state_machine.current_state.name)
-      else
-        state_value == @ssm_state_machine.current_state.name
-      end
-    else
-      true
-    end
+    @ssm_state_machine.property_name.nil? ? true : ssm_get == @ssm_state_machine.get_state_for_property
   end
   
   # Updates the StateMachine based on the value of the state property of the instance
   def _update_ssm_state
     unless @ssm_state_machine.property_name.nil?
-      state_value = send("#{@ssm_state_machine.property_name}".to_sym)
-      @ssm_state_machine.current_state = @ssm_state_machine.use_property_index == true ? @ssm_state_machine.get_state_by_index(state_value) : @ssm_state_machine.get_state_by_name(state_value)
+      @ssm_state_machine.current_state = @ssm_state_machine.use_property_index == true ? @ssm_state_machine.get_state_by_index(ssm_get) : @ssm_state_machine.get_state_by_name(ssm_get)
     end
   end
 end

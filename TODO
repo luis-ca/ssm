@@ -1,2 +1,3 @@
 * Write features for DataMapper integration
 * Consider raising an ArgumentError exception if args are not passed in to the block on Event call
+* Consider ActiveRecord specific setters

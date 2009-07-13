@@ -58,6 +58,20 @@ describe SSM::StateMachine do
       @sm.get_state_index_by_name(:second_state).should equal(1)
     end
     
+    it "should allow retrieval of State value when use_property_index is false" do
+      @sm.initial_state = SSM::State.new(:first_state)
+      @sm.current_state = @sm.initial_state
+      @sm.use_property_index = false
+      @sm.get_state_for_property.should eql(:first_state)
+    end
+    
+    it "should allow retrieval of State index when use_property_index is true" do
+      @sm.initial_state = SSM::State.new(:first_state)
+      @sm.current_state = @sm.initial_state
+      @sm.use_property_index = true
+      @sm.get_state_for_property.should eql(0)
+    end    
+    
     describe 'uniqueness' do
       
       it "should be enforced if the same State is added twice" do

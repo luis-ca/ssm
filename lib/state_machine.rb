@@ -6,10 +6,13 @@ module SSM
 
   class StateMachine
     
-    attr_reader :initial_state
+    attr_reader   :initial_state
     attr_accessor :current_state
+    
     attr_accessor :property_name
     attr_accessor :use_property_index
+    attr_accessor :injection_strategy
+    
     attr_reader :states
     attr_reader :events
     
@@ -64,6 +67,10 @@ module SSM
     
     def event_exists?(event_to_compare)
       @events.find { |existing_event| existing_event.equal(event_to_compare) }
+    end
+    
+    def get_state_for_property
+      @use_property_index == true ? get_state_index_by_name(@current_state.name) : @current_state.name
     end
     
     def get_state_by_name(name)
