@@ -41,7 +41,7 @@ require File.join(File.dirname(__FILE__), 'injection_strategies', 'base')
 #--
 module SSM
   
-  VERSION = '0.1.6';
+  VERSION = '0.1.7';
 
   class InvalidTransition     < RuntimeError; end
   class UndefinedState        < RuntimeError; end
