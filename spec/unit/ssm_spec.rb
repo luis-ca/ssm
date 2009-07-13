@@ -366,6 +366,10 @@ describe SSM do
       model.my_state.should eql(0)
       model.ssm_state_machine.current_state.name.should eql(:first_state)
     end
+
+    it "should return the State as a symbol" do
+      Foo.new.ssm_state.should eql(:first_state)
+    end
   end
 
   context "when allocated" do

@@ -295,6 +295,12 @@ module SSM
     @ssm_state_machine.current_state.name.to_sym != state_name_or_symbol.to_sym
   end
   
+  
+  def ssm_state
+    _synchronize_state
+    @ssm_state_machine.current_state.name  
+  end
+  
   private
 
   def _ssm_trigger_event(event_name_or_symbol, args)
