@@ -41,7 +41,7 @@ require File.join(File.dirname(__FILE__), 'injection_strategies', 'base')
 #--
 module SSM
   
-  VERSION = '0.1.5';
+  VERSION = '0.1.6';
 
   class InvalidTransition     < RuntimeError; end
   class UndefinedState        < RuntimeError; end
@@ -264,6 +264,7 @@ module SSM
   #   door = Door.new
   #   door.open
   #   door.is?(:opened) #=> true
+  #
   def is?(state_name_or_symbol)
     _synchronize_state
     @ssm_state_machine.current_state.name.to_sym == state_name_or_symbol.to_sym
@@ -290,12 +291,17 @@ module SSM
   #   door = Door.new
   #   door.open
   #   door.is?(:closed) #=> false  
+  #
   def is_not?(state_name_or_symbol)
     _synchronize_state
     @ssm_state_machine.current_state.name.to_sym != state_name_or_symbol.to_sym
   end
   
-  
+  # Returns a symbol representing the current State
+  #
+  #    door = Door.new
+  #    door.ssm_state #=> :closed
+  #
   def ssm_state
     _synchronize_state
     @ssm_state_machine.current_state.name  
