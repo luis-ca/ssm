@@ -32,7 +32,7 @@ SSM is a mixin that adds finite-state machine behavior to a class.
     door.is_not?(:opened) #=> true
     door.is?(:closed) #=> true
 
-### Example usage with persistence
+### Persistence
 
 SSM does not worry about persistence. It does allow the user to specify an instance property to store the State
 in, either as a symbol (default) or as an integer. This can then be persisted. SSM will recover state based on this property.
