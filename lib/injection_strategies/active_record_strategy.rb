@@ -3,9 +3,8 @@ module SSM
     module ActiveRecordStrategy
     
       def ssm_setup
-        _synchronize_state
+        _synchronize_state if new_record?
       end
-      
       
       def ssm_set(v)
         send("#{@ssm_state_machine.property_name}=".to_sym, v)
