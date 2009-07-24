@@ -136,7 +136,7 @@ module SSM
     
     # Sets the instance attribute that stores a representation of the State. In
     # the first form, the property will return a symbol represeting the State.
-    # In the second form, an index is returned, making it more convenient when
+    # In the second form, an integer is returned, making it more convenient when
     # dealing with persistence.
     #
     #   class Door
@@ -152,7 +152,7 @@ module SSM
     #   class Door
     #     include SSM
     #
-    #     ssm_inject_state_into :state, :use_index
+    #     ssm_inject_state_into :state, :as_integer => true
     #     ssm_initial_state :closed
     #   end
     #

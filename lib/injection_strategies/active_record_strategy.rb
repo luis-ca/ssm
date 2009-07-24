@@ -3,6 +3,7 @@ module SSM
     module ActiveRecordStrategy
     
       def ssm_setup
+        _synchronize_state
       end
       
       
