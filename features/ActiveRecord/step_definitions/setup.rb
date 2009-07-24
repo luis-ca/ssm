@@ -10,6 +10,9 @@ ActiveRecord::Migration::create_table :doors do |t|
   t.integer :state
 end
 
+at_exit do
+  File.delete("tmp_sqlite_file")
+end
 
 Given /^I have declared a new ActiveRecord model Door$/ do
   class Door < ActiveRecord::Base
@@ -19,7 +22,7 @@ end
 
 Given /^I have added an index based property I will use to manage persistence with ActiveRecord$/ do
   class Door < ActiveRecord::Base
-    ssm_inject_state_into :state, :map_to_index => true, :strategy => :active_record
+    ssm_inject_state_into :state, :as_integer => true, :strategy => :active_record
   end
 end
 

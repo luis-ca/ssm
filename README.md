@@ -35,12 +35,31 @@ SSM is a mixin that adds finite-state machine behavior to a class.
 ### Example usage with persistence
 
 SSM does not worry about persistence. It does allow the user to specify an instance property to store the State
-in, either as a symbol or as an index. This can then be persisted. SSM will recover state based on this property.
+in, either as a symbol (default) or as an integer. This can then be persisted. SSM will recover state based on this property.
+
+### Integrating with Rails (ActiveRecord)
+
+On your config/environment.rb file:
+
+    config.gem 'spoonsix-ssm', :lib => 'ssm', :version => '>= 0.1.7', :source => 'http://gems.github.com'
+    
+Then run:
+
+    rake gems:install
+    rake gems:unpack # Optional, if you want to vendor the gem
+
+Add a migration to include the state column, either as a string or integer, for instance:
+
+    create_table :doors do |t|
+      t.integer :state # Will store the current state as an integer
+    end
+
+Setup your ActiveRecord object to use SSM, as 
 
     class Door < ActiveRecord:Base
       include SSM
 
-      ssm_inject_state_into :state, :map_to_index => true, :strategy => :active_record
+      ssm_inject_state_into :state, :as_integer => true, :strategy => :active_record
 
       ssm_initial_state :closed # required
       ssm_state :opened
@@ -52,10 +71,10 @@ in, either as a symbol or as an index. This can then be persisted. SSM will reco
     door.is?(:opened) #=> true
     door.state #=> 1
     door.save
-  
+
     persisted_door = Door.find(door.id)
     persisted_door.is?(:opened) #=> true
-      
+
 ### Inspiration and resources
 
 * [http://en.wikipedia.org/wiki/Finite-state_machine](http://en.wikipedia.org/wiki/Finite-state_machine)

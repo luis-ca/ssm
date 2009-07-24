@@ -91,7 +91,7 @@ describe SSM do
       class Foo
         include SSM
 
-        ssm_inject_state_into :foo_property, :map_to_index => true
+        ssm_inject_state_into :foo_property, :as_integer => true
       
         ssm_initial_state :foo_state_1
         ssm_state :foo_state_2
@@ -252,7 +252,7 @@ describe SSM do
       class Baz
         include SSM
 
-        ssm_inject_state_into :my_state, :map_to_index => true
+        ssm_inject_state_into :my_state, :as_integer => true
       
         ssm_initial_state :first_state
         ssm_state :second_state

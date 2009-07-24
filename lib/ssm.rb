@@ -160,7 +160,7 @@ module SSM
     #
     def ssm_inject_state_into(name, options={}, &block)
       SSM::TemplateStateMachines[self].property_name = name
-      SSM::TemplateStateMachines[self].use_property_index = options[:map_to_index].nil? ? false : true
+      SSM::TemplateStateMachines[self].use_property_index = options[:as_integer].nil? ? false : true
       SSM::TemplateStateMachines[self].injection_strategy = options[:strategy] #SSM::InjectionStrategies::Base.factory(options[:strategy])
     end
     
