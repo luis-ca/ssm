@@ -70,11 +70,11 @@ module SSM
     end
     
     def get_state_for_property
-      @use_property_index == true ? get_state_index_by_name(@current_state.name) : @current_state.name
+      @use_property_index == true ? get_state_index_by_name(@current_state.name) : @current_state.name.to_s
     end
     
     def get_state_by_name(name)
-      state = @states.find { |state| state.name == name}
+      state = @states.find { |state| state.name == name.to_sym}
       raise SSM::UndefinedState.new unless state.is_a?(SSM::State)
       state
     end

@@ -9,6 +9,10 @@ describe SSM::State do
     state.frozen?.should be_true
   end
   
+  it "should return a symbol representing the state" do
+    state = SSM::State.new("first_state")
+    state.name.should equal(:first_state)
+  end
   
   describe " - equal()" do
     

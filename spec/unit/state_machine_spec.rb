@@ -34,10 +34,16 @@ describe SSM::StateMachine do
       @sm.states.should be_a(Array)
     end
     
-    it "should allow retrieval of State by name" do
+    it "should allow retrieval of State by name when a symbol is passed in" do
       @sm << state = SSM::State.new(:first_state)
       @sm << SSM::State.new(:second_state)
       @sm.get_state_by_name(:first_state).should equal(state)
+    end
+    
+    it "should allow retrieval of State by name when a string is passed in" do
+      @sm << state = SSM::State.new(:first_state)
+      @sm << SSM::State.new(:second_state)
+      @sm.get_state_by_name("first_state").should equal(state)
     end
     
     it "should allow retrieval of State by index" do
@@ -62,7 +68,7 @@ describe SSM::StateMachine do
       @sm.initial_state = SSM::State.new(:first_state)
       @sm.current_state = @sm.initial_state
       @sm.use_property_index = false
-      @sm.get_state_for_property.should eql(:first_state)
+      @sm.get_state_for_property.should eql("first_state")
     end
     
     it "should allow retrieval of State index when use_property_index is true" do

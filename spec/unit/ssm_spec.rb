@@ -167,7 +167,7 @@ describe SSM do
       end
     
       it "should customize State property" do
-        Bar.new.bar_property.should equal(:bar_state_1)
+        Bar.new.bar_property.should eql("bar_state_1")
       end
       
       it "should customize State property using index" do
@@ -317,9 +317,9 @@ describe SSM do
 
     it "should attempt to update State property if it exists" do
       model = Foo.new
-      model.some_state_property.should equal(:first_state)
+      model.some_state_property.should eql("first_state")
       model.first_to_second
-      model.some_state_property.should equal(:second_state)
+      model.some_state_property.should eql("second_state")
     end
 
     it "should compare its State to another State (positive)" do
